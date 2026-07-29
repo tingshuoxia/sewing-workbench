@@ -1891,3 +1891,82 @@ textarea.text-input { resize: vertical; min-height: 60px; }
   margin-bottom: 8px;
 }
 .travel-actions { display: flex; gap: 6px; }
+
+/* ============== 备忘 ============== */
+.memo-section { padding-top: 6px; padding-bottom: 150px; }
+.memo-datebar {
+  display: flex; align-items: center; justify-content: center; gap: 18px;
+  margin: 4px 0 18px;
+}
+.memo-arrow {
+  width: 38px; height: 38px; border-radius: 50%;
+  border: 1px solid var(--line); background: var(--card);
+  color: var(--brown-deep); font-size: 22px; line-height: 1;
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+  box-shadow: var(--shadow-sm);
+  transition: transform .15s, background .15s;
+}
+.memo-arrow:active { transform: scale(.92); background: var(--bg-soft); }
+.memo-date {
+  font-size: 16px; font-weight: 600; color: var(--ink);
+  letter-spacing: .5px; min-width: 130px; text-align: center;
+}
+.memo-list { display: flex; flex-direction: column; gap: 10px; }
+.memo-empty {
+  text-align: center; color: var(--ink-soft);
+  font-size: 14px; padding: 48px 16px;
+}
+.memo-item {
+  display: flex; align-items: center; gap: 12px;
+  background: var(--card); border: 1px solid var(--line);
+  border-radius: var(--radius-md); padding: 14px 16px;
+  box-shadow: var(--shadow-sm);
+  transition: opacity .2s;
+}
+.memo-check {
+  flex: 0 0 auto; width: 24px; height: 24px; border-radius: 50%;
+  border: 2px solid var(--brown); background: transparent;
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+  color: #fff; transition: background .15s, border-color .15s;
+  padding: 0;
+}
+.memo-check-on { background: var(--brown); }
+.memo-text {
+  flex: 1 1 auto; font-size: 15px; line-height: 1.5; color: var(--ink);
+  word-break: break-word; cursor: text;
+}
+.memo-item.memo-done .memo-text {
+  text-decoration: line-through; color: var(--ink-soft); opacity: .6;
+}
+.memo-item.memo-done .memo-check { border-color: var(--brown); background: var(--brown); }
+.memo-clear {
+  display: block; margin: 22px auto 4px;
+  background: transparent; border: none; cursor: pointer;
+  color: var(--ink-soft); font-size: 13px; padding: 8px 14px;
+  border-radius: var(--radius-pill);
+}
+.memo-clear:active { background: var(--bg-soft); }
+.memo-clear:hover { color: var(--red); }
+
+/* 备忘 新增/编辑 浮层 */
+.memo-composer {
+  position: fixed; left: 50%; bottom: 0; transform: translateX(-50%) translateY(110%);
+  width: 100%; max-width: 480px;
+  background: var(--card); border-top: 1px solid var(--line);
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  box-shadow: 0 -8px 30px rgba(80,50,30,.16);
+  padding: 18px 18px calc(18px + env(safe-area-inset-bottom));
+  display: flex; flex-direction: column; gap: 12px;
+  transition: transform .28s cubic-bezier(.2,.8,.2,1);
+  z-index: 30;
+}
+.memo-composer.open { transform: translateX(-50%) translateY(0); }
+.memo-composer-title { font-size: 15px; font-weight: 600; color: var(--ink); }
+.memo-composer-input {
+  width: 100%; border: 1px solid var(--line); border-radius: var(--radius-md);
+  background: var(--bg); padding: 12px 14px; font-family: var(--font);
+  font-size: 15px; color: var(--ink); resize: none; line-height: 1.5;
+}
+.memo-composer-input:focus { outline: none; border-color: var(--brown); }
+.memo-composer-actions { display: flex; gap: 10px; }
+.memo-composer-actions .qa-btn { flex: 1; }

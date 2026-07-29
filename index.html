@@ -330,10 +330,10 @@
 
         <div class="seg-tabs seg-tabs-wellness">
           <button class="seg-tab seg-active" data-wseg="weight">体重</button>
-          <button class="seg-tab" data-wseg="news">新闻</button>
           <button class="seg-tab" data-wseg="book">好书</button>
           <button class="seg-tab" data-wseg="treehole">树洞</button>
           <button class="seg-tab" data-wseg="travel">旅行</button>
+          <button class="seg-tab" data-wseg="memo">备忘</button>
         </div>
 
         <!-- 体重记录 -->
@@ -352,15 +352,28 @@
           </button>
         </div>
 
-        <!-- 新闻热点 -->
-        <div class="seg-pane" data-wpane="news">
-          <div class="wellness-section">
-            <div class="news-hint">📋 每日精选百度 / 微博热点，附概括内容</div>
-            <div class="news-list" id="newsList">
-              <!-- 新闻热点由 JS 渲染 -->
+        <!-- 备忘 -->
+        <div class="seg-pane" data-wpane="memo">
+          <div class="wellness-section memo-section">
+            <div class="memo-datebar">
+              <button class="memo-arrow" data-memo-prev aria-label="前一天">‹</button>
+              <div class="memo-date" id="memoDateLabel">今天</div>
+              <button class="memo-arrow" data-memo-next aria-label="后一天">›</button>
             </div>
-            <button class="qa-btn qa-cream full" id="refreshNewsBtn">🔄 刷新新闻</button>
+            <div class="memo-list" id="memoList"><!-- 备忘由 JS 渲染 --></div>
+            <button class="memo-clear" id="clearDoneMemo" data-action="clear-done-memo">清除已完成</button>
+            <div class="memo-composer" id="memoComposer">
+              <div class="memo-composer-title">记一笔</div>
+              <textarea class="memo-composer-input" id="memoComposerInput" placeholder="写点今天要做的事…" rows="2"></textarea>
+              <div class="memo-composer-actions">
+                <button class="qa-btn qa-cream" data-action="memo-cancel">取消</button>
+                <button class="qa-btn qa-red" data-action="memo-save">保存</button>
+              </div>
+            </div>
           </div>
+          <button class="fab fab-red" data-action="new-memo" aria-label="新增备忘">
+            <svg viewBox="0 0 24 24" width="22" height="22"><path d="M12 5v14M5 12h14" stroke="#FBF6EE" stroke-width="2.4" stroke-linecap="round"/></svg>
+          </button>
         </div>
 
         <!-- 好书推荐 -->

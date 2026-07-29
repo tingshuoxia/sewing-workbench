@@ -152,6 +152,7 @@ function seedData() {
       { id: 'tr2', destination: '京都', startDate: '', endDate: '',
         status: 'dreaming', budget: 12000, days: 7, note: '想看樱花季、体验友禅染、逛锦市场' },
     ],
+    memos: {},
     settings: { reminderTime: '09:00' }
   };
 }
@@ -159,8 +160,33 @@ function seedData() {
 function emptyData() {
   return {
     inventory: [], orders: [], inspirations: [], wishlist: [], portfolio: [],
-    purchases: [], weights: [], thoughts: [], travels: [], settings: { reminderTime: '09:00' }
+    purchases: [], weights: [], thoughts: [], travels: [], memos: {}, settings: { reminderTime: '09:00' }
   };
+}
+
+/* 旧主页链接 → 具体搜索/视频链接（迁移数据；须定义在 loadState 调用之前，避免暂时性死区 TDZ） */
+const INSP_URL_MIGRATION = {
+  'i1': 'https://www.douyin.com/search/拉链卡包手工缝纫教程',
+  'i2': 'https://www.xiaohongshu.com/search_result?keyword=碎花棉布抱枕手工制作',
+  'i3': 'https://www.bilibili.com/video/BV1B94y1B7wY/',
+  'i4': 'https://www.douyin.com/search/布艺小熊玩偶制作教程',
+  'i5': 'https://www.xiaohongshu.com/search_result?keyword=棉布手提袋手工缝制',
+  'i6': 'https://www.bilibili.com/video/BV1bF3M6vEHs/',
+};
+const OLD_INSP_HOMEPAGES = [
+  'https://www.douyin.com', 'https://www.douyin.com/discover',
+  'https://www.xiaohongshu.com', 'https://www.bilibili.com',
+];
+function migrateInspirationUrls(data) {
+  if (!data.inspirations) return;
+  let changed = false;
+  data.inspirations.forEach(it => {
+    if (INSP_URL_MIGRATION[it.id] && OLD_INSP_HOMEPAGES.includes(it.url)) {
+      it.url = INSP_URL_MIGRATION[it.id];
+      changed = true;
+    }
+  });
+  if (changed) localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
 }
 
 let state = loadState();
@@ -202,6 +228,7 @@ function loadState() {
     if (!parsed.weights) parsed.weights = [];
     if (!parsed.thoughts) parsed.thoughts = [];
     if (!parsed.travels) parsed.travels = [];
+    if (!parsed.memos) parsed.memos = {};
     // 迁移：将旧的灵感主页链接更新为具体的搜索/视频链接
     migrateInspirationUrls(parsed);
     // 迁移：排单物料由 [id] 兼容为 [{id,qty}]
@@ -226,30 +253,6 @@ function migrateMaterials(data) {
   });
 }
 
-/* 旧主页链接 → 具体搜索/视频链接 */
-const INSP_URL_MIGRATION = {
-  'i1': 'https://www.douyin.com/search/拉链卡包手工缝纫教程',
-  'i2': 'https://www.xiaohongshu.com/search_result?keyword=碎花棉布抱枕手工制作',
-  'i3': 'https://www.bilibili.com/video/BV1B94y1B7wY/',
-  'i4': 'https://www.douyin.com/search/布艺小熊玩偶制作教程',
-  'i5': 'https://www.xiaohongshu.com/search_result?keyword=棉布手提袋手工缝制',
-  'i6': 'https://www.bilibili.com/video/BV1bF3M6vEHs/',
-};
-const OLD_INSP_HOMEPAGES = [
-  'https://www.douyin.com', 'https://www.douyin.com/discover',
-  'https://www.xiaohongshu.com', 'https://www.bilibili.com',
-];
-function migrateInspirationUrls(data) {
-  if (!data.inspirations) return;
-  let changed = false;
-  data.inspirations.forEach(it => {
-    if (INSP_URL_MIGRATION[it.id] && OLD_INSP_HOMEPAGES.includes(it.url)) {
-      it.url = INSP_URL_MIGRATION[it.id];
-      changed = true;
-    }
-  });
-  if (changed) localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-}
 function saveState() {
   const json = JSON.stringify(state);
   localStorage.setItem(STORAGE_KEY, json);
@@ -893,6 +896,7 @@ function refreshWellness() {
   if (wellnessTab === 'book') refreshBook();
   if (wellnessTab === 'treehole') refreshTreehole();
   if (wellnessTab === 'travel') refreshTravel();
+  if (wellnessTab === 'memo') refreshMemo();
 }
 
 /* ---- 体重 ---- */
@@ -1033,6 +1037,148 @@ function refreshNews() {
     </div>
   `).join('');
   $('#newsList').innerHTML = html;
+}
+
+/* ---- 备忘 ---- */
+let memoDate = todayStr(); // 当前查看的日期 YYYY-MM-DD
+let editingMemoId = null;
+
+const WEEKDAY = ['周日','周一','周二','周三','周四','周五','周六'];
+function fmtDateLabel(dStr) {
+  const d = new Date(dStr + 'T00:00:00');
+  return `${d.getMonth() + 1}月${d.getDate()}日 · ${WEEKDAY[d.getDay()]}`;
+}
+function todayStr() {
+  const n = new Date();
+  const m = String(n.getMonth() + 1).padStart(2, '0');
+  const d = String(n.getDate()).padStart(2, '0');
+  return `${n.getFullYear()}-${m}-${d}`;
+}
+function shiftDate(dStr, delta) {
+  const [y, m, d] = dStr.split('-').map(Number);
+  const dt = new Date(y, m - 1, d);
+  dt.setDate(dt.getDate() + delta);
+  const mm = String(dt.getMonth() + 1).padStart(2, '0');
+  const dd = String(dt.getDate()).padStart(2, '0');
+  return `${dt.getFullYear()}-${mm}-${dd}`;
+}
+function getMemos(dStr) {
+  return (state.memos && state.memos[dStr]) ? state.memos[dStr] : [];
+}
+function setMemos(dStr, arr) {
+  if (!state.memos) state.memos = {};
+  if (arr && arr.length) state.memos[dStr] = arr;
+  else delete state.memos[dStr];
+}
+
+function refreshMemo() {
+  const label = $('#memoDateLabel');
+  if (label) {
+    const today = todayStr();
+    label.textContent = (memoDate === today ? '今天 · ' : '') + fmtDateLabel(memoDate);
+  }
+  const list = $('#memoList');
+  if (!list) return;
+  const items = getMemos(memoDate);
+  if (!items.length) {
+    list.innerHTML = `<div class="memo-empty">🍃 这一天的备忘还空空的，写点什么吧</div>`;
+  } else {
+    const sorted = items.slice().sort((a, b) => (a.done ? 1 : 0) - (b.done ? 1 : 0) || a.createdAt - b.createdAt);
+    list.innerHTML = sorted.map(m => `
+      <div class="memo-item ${m.done ? 'memo-done' : ''}" data-memo-id="${m.id}">
+        <button class="memo-check" data-toggle-memo="${m.id}" aria-label="${m.done ? '标记为未完成' : '标记为完成'}">
+          ${m.done ? '<span class="memo-check-on">✓</span>' : ''}
+        </button>
+        <div class="memo-text" data-edit-memo="${m.id}">${escapeHtml(m.text)}</div>
+        <button class="act-btn act-del" data-del-memo="${m.id}" aria-label="删除">
+          <svg viewBox="0 0 24 24" width="13" height="13"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+      </div>
+    `).join('');
+  }
+  const doneCount = items.filter(m => m.done).length;
+  const clearBtn = $('#clearDoneMemo');
+  if (clearBtn) clearBtn.textContent = doneCount ? `清除已完成（${doneCount}）` : '清除已完成';
+}
+
+function toggleMemo(id) {
+  const arr = getMemos(memoDate);
+  const m = arr.find(x => x.id === id);
+  if (!m) return;
+  m.done = !m.done;
+  setMemos(memoDate, arr);
+  saveState();
+  refreshMemo();
+}
+
+function deleteMemo(id) {
+  if (!confirm('确定要删除这条备忘吗？')) return;
+  const arr = getMemos(memoDate).filter(x => x.id !== id);
+  setMemos(memoDate, arr);
+  saveState();
+  toast('已删除');
+  refreshMemo();
+}
+
+function openMemoComposer(editId) {
+  editingMemoId = editId || null;
+  const box = $('#memoComposer');
+  const input = $('#memoComposerInput');
+  if (!box || !input) return;
+  const titleEl = box.querySelector('.memo-composer-title');
+  if (editingMemoId) {
+    const arr = getMemos(memoDate);
+    const m = arr.find(x => x.id === editingMemoId);
+    input.value = m ? m.text : '';
+    if (titleEl) titleEl.textContent = '编辑备忘';
+  } else {
+    input.value = '';
+    if (titleEl) titleEl.textContent = '记一笔';
+  }
+  box.classList.add('open');
+  setTimeout(() => input.focus(), 50);
+}
+
+function closeMemoComposer() {
+  const box = $('#memoComposer');
+  if (box) box.classList.remove('open');
+  editingMemoId = null;
+}
+
+function saveMemoComposer() {
+  const input = $('#memoComposerInput');
+  if (!input) return;
+  const text = input.value.trim();
+  if (!text) { toast('写点什么吧'); return; }
+  if (editingMemoId) {
+    const arr = getMemos(memoDate);
+    const m = arr.find(x => x.id === editingMemoId);
+    if (m) m.text = text;
+    setMemos(memoDate, arr);
+    toast('已更新');
+  } else {
+    const arr = getMemos(memoDate).slice();
+    arr.push({ id: uid(), text, done: false, createdAt: Date.now() });
+    setMemos(memoDate, arr);
+    toast('已记下 ✏️');
+  }
+  saveState();
+  closeMemoComposer();
+  refreshMemo();
+}
+
+function clearDoneMemos() {
+  let total = 0;
+  Object.keys(state.memos || {}).forEach(d => {
+    const kept = state.memos[d].filter(m => !m.done);
+    total += (state.memos[d].length - kept.length);
+    if (kept.length) state.memos[d] = kept; else delete state.memos[d];
+  });
+  if (total === 0) { toast('没有���完成的备忘'); return; }
+  if (!confirm(`确定清除全部 ${total} 条已完成备忘吗？`)) return;
+  saveState();
+  toast(`已清除 ${total} 条已完成`);
+  refreshMemo();
 }
 
 /* ---- 好书 ---- */
@@ -2434,6 +2580,7 @@ function bind() {
     if (a === 'new-weight') openSheet('Weight');
     if (a === 'new-thought') openSheet('Thought');
     if (a === 'new-travel') openSheet('Travel');
+    if (a === 'new-memo') openMemoComposer();
   }));
 
   // Sheet 关闭
@@ -2471,6 +2618,29 @@ function bind() {
       location.hash = target;
     }
   }));
+
+  // 备忘：左右滑动切换日期
+  const memoEl = $('#memoList');
+  if (memoEl) {
+    let sx = 0, sy = 0;
+    memoEl.addEventListener('touchstart', e => { const t = e.changedTouches[0]; sx = t.clientX; sy = t.clientY; }, { passive: true });
+    memoEl.addEventListener('touchend', e => {
+      const t = e.changedTouches[0];
+      const dx = t.clientX - sx, dy = t.clientY - sy;
+      if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy)) {
+        memoDate = shiftDate(memoDate, dx < 0 ? 1 : -1); // 左滑→后一天，右滑→前一天
+        refreshMemo();
+      }
+    }, { passive: true });
+  }
+
+  // 备忘：编辑框回车保存（textarea 用 Cmd/Ctrl+Enter 或单纯 Enter 保存）
+  const memoInput = $('#memoComposerInput');
+  if (memoInput) {
+    memoInput.addEventListener('keydown', e => {
+      if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); saveMemoComposer(); }
+    });
+  }
 
   // 新闻/好书刷新
   const refreshNewsBtn = $('#refreshNewsBtn');
@@ -2591,6 +2761,25 @@ function bind() {
     if (editTr) { e.stopPropagation(); editTravel(editTr.dataset.editTravel); return; }
     const delTr = e.target.closest('[data-del-travel]');
     if (delTr) { e.stopPropagation(); deleteTravel(delTr.dataset.delTravel); return; }
+
+    // ===== 备忘 =====
+    const tgMemo = e.target.closest('[data-toggle-memo]');
+    if (tgMemo) { e.stopPropagation(); toggleMemo(tgMemo.dataset.toggleMemo); return; }
+    const delMemo = e.target.closest('[data-del-memo]');
+    if (delMemo) { e.stopPropagation(); deleteMemo(delMemo.dataset.delMemo); return; }
+    const editMemo = e.target.closest('[data-edit-memo]');
+    if (editMemo) { e.stopPropagation(); openMemoComposer(editMemo.dataset.editMemo); return; }
+    const prevMemo = e.target.closest('[data-memo-prev]');
+    if (prevMemo) { e.stopPropagation(); memoDate = shiftDate(memoDate, -1); refreshMemo(); return; }
+    const nextMemo = e.target.closest('[data-memo-next]');
+    if (nextMemo) { e.stopPropagation(); memoDate = shiftDate(memoDate, 1); refreshMemo(); return; }
+    const actMemo = e.target.closest('[data-action]');
+    if (actMemo) {
+      const a = actMemo.dataset.action;
+      if (a === 'clear-done-memo') { e.stopPropagation(); clearDoneMemos(); return; }
+      if (a === 'memo-save') { e.stopPropagation(); saveMemoComposer(); return; }
+      if (a === 'memo-cancel') { e.stopPropagation(); closeMemoComposer(); return; }
+    }
 
     // 编辑 / 删除灵感
     const editInsp = e.target.closest('[data-insp-edit]');
@@ -2737,7 +2926,7 @@ document.addEventListener('DOMContentLoaded', () => {
   bind();
 
   // hash 路由：#inventory / #orders / … / #wellness/news（修身养性子页签）
-  const WELLNESS_TABS = ['weight','news','book','treehole','travel'];
+  const WELLNESS_TABS = ['weight','book','treehole','travel','memo'];
   function applyHashRoute() {
     if (suppressHashRoute) { suppressHashRoute = false; return; }
     const raw = (location.hash || '#workbench').slice(1);
