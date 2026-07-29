@@ -1,0 +1,40 @@
+{
+  "name": "聼说的缝纫工作台",
+  "short_name": "缝纫工作台",
+  "description": "缝纫手作人的随身工作台——库存台账、排单进度、记录灵感、想做清单、作品集，一站搞定。",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#FBF6EE",
+  "theme_color": "#C84B3F",
+  "lang": "zh-CN",
+  "dir": "ltr",
+  "categories": ["productivity", "lifestyle"],
+  "icons": [
+    {
+      "src": "cat-icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "cat-icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "cat-icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "cat-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

@@ -1,0 +1,918 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<meta name="theme-color" content="#C84B3F" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="缝纫工作台" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="description" content="缝纫手作人的随身工作台——库存台账、排单进度、记录灵感、想做清单、作品集，一站搞定。" />
+<title>聼说的缝纫工作台</title>
+<link rel="manifest" href="manifest.json" />
+<link rel="stylesheet" href="styles.css" />
+<link rel="icon" type="image/svg+xml" href="cat-icon.svg" />
+<link rel="icon" type="image/png" sizes="192x192" href="cat-icon-192.png" />
+<link rel="apple-touch-icon" sizes="180x180" href="cat-icon-180.png" />
+</head>
+<body>
+
+<!-- ============== 主应用容器 ============== -->
+<div class="app" id="app">
+
+      <!-- =================== 工作台 =================== -->
+      <section class="view view-dashboard active" data-view="workbench">
+
+        <header class="hero-header">
+          <div class="greeting-line">
+            <div class="greeting-text">
+              <div class="hi-line" id="greetingLine">晚上好，小裁缝 👋</div>
+              <h1 class="brand-title">聼说的<span class="accent">缝纫</span>工作台</h1>
+              <div class="date-line"><span id="dateLine">7月24日</span> · <span id="weekdayLine">周五</span></div>
+            </div>
+            <button class="more-btn" aria-label="更多">
+              <svg viewBox="0 0 24 24" width="20" height="20"><circle cx="6" cy="12" r="1.6" fill="currentColor"/><circle cx="12" cy="12" r="1.6" fill="currentColor"/><circle cx="18" cy="12" r="1.6" fill="currentColor"/></svg>
+            </button>
+          </div>
+        </header>
+
+        <!-- 缝纫机插画 + 鼓励语 -->
+        <div class="hero-card">
+          <div class="hero-carousel" id="heroCarousel">
+            <!-- 成品滚动播放，由 app.js 动态填充 -->
+          </div>
+          <div class="hero-text">
+            <h2>今日宜动手不动气，布料比道理温柔 🤍</h2>
+            <div class="hero-stats">
+              <span>在排 <strong id="statInProgress">0</strong> 件</span>
+              <span class="dot-sep">·</span>
+              <span><span id="statPendingLabel">待交单</span> <strong id="statPending">0</strong> 件</span>
+              <span class="dot-sep">·</span>
+              <span>想做待完成 <strong id="statInspiration">0</strong> 件</span>
+            </div>
+
+            <div class="quick-actions">
+              <button class="qa-btn qa-red" data-action="new-order">+ 新排单</button>
+              <button class="qa-btn qa-brown" data-action="new-material">+ 记布料</button>
+              <button class="qa-btn qa-cream" data-action="new-inspiration">+ 记灵感</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 六大工作台 -->
+        <div class="section-title">
+          <span class="dot-mark"></span>六大工作台
+        </div>
+
+        <div class="workbench-grid">
+          <div class="wb-card" data-go="inventory">
+            <div class="wb-icon icon-pink">
+              <svg viewBox="0 0 24 24" width="20" height="20"><rect x="3" y="5" width="18" height="16" rx="2" fill="none" stroke="currentColor" stroke-width="1.8"/><line x1="3" y1="10" x2="21" y2="10" stroke="currentColor" stroke-width="1.8"/><line x1="8" y1="3" x2="8" y2="7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><line x1="16" y1="3" x2="16" y2="7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+            </div>
+            <div class="wb-name">库存台账</div>
+            <div class="wb-sub"><span id="wbInventoryCount">0</span> 种物料</div>
+          </div>
+
+          <div class="wb-card" data-go="orders">
+            <div class="wb-icon icon-green">
+              <svg viewBox="0 0 24 24" width="20" height="20"><circle cx="12" cy="13" r="8" fill="none" stroke="currentColor" stroke-width="1.8"/><line x1="12" y1="13" x2="12" y2="9" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><line x1="12" y1="13" x2="15" y2="13" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><line x1="12" y1="3" x2="12" y2="5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><line x1="12" y1="21" x2="12" y2="19" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+            </div>
+            <div class="wb-name">排单进度</div>
+            <div class="wb-sub"><span id="wbOrderCount">0</span> 件进行中</div>
+          </div>
+
+          <div class="wb-card" data-go="inspiration">
+            <div class="wb-icon icon-blue">
+              <svg viewBox="0 0 24 24" width="20" height="20"><polygon points="12,3 14.6,9 21,9.5 16,14 17.5,20.5 12,17 6.5,20.5 8,14 3,9.5 9.4,9" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+            </div>
+            <div class="wb-name">记录灵感</div>
+            <div class="wb-sub"><span id="wbInspirationCount">0</span> 条收藏</div>
+          </div>
+
+          <div class="wb-card" data-go="wishlist">
+            <div class="wb-icon icon-pink-soft">
+              <svg viewBox="0 0 24 24" width="20" height="20"><path d="M12 21s-7-4.5-9-9.5C1.5 7 4 4 7 4c2 0 3.5 1 5 3 1.5-2 3-3 5-3 3 0 5.5 3 4 7.5C19 16.5 12 21 12 21z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+            </div>
+            <div class="wb-name">想做清单</div>
+            <div class="wb-sub"><span id="wbWishlistCount">0</span> 件想试</div>
+          </div>
+
+          <div class="wb-card" data-go="portfolio">
+            <div class="wb-icon icon-brown">
+              <svg viewBox="0 0 24 24" width="20" height="20"><rect x="3" y="5" width="18" height="14" rx="2" fill="none" stroke="currentColor" stroke-width="1.8"/><circle cx="8" cy="10" r="1.5" fill="currentColor"/><path d="M21 17l-5-5-9 7" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+            </div>
+            <div class="wb-name">作品集</div>
+            <div class="wb-sub"><span id="wbPortfolioCount">0</span> 件成品</div>
+          </div>
+
+          <div class="wb-card" data-go="wellness">
+            <div class="wb-icon icon-yellow">
+              <svg viewBox="0 0 24 24" width="20" height="20"><path d="M12 2C8 2 5 5 5 9c0 4 7 13 7 13s7-9 7-13c0-4-3-7-7-7z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><circle cx="12" cy="9" r="2.5" fill="none" stroke="currentColor" stroke-width="1.8"/></svg>
+            </div>
+            <div class="wb-name">修身养性</div>
+            <div class="wb-sub">体重 · 新闻 · 好书 · 树洞</div>
+          </div>
+        </div>
+
+        <div class="workbench-tip">
+          <span class="cat-line">🐾</span>
+          <span>点一点卡片就能跳过去——库存、排单、记录灵感、想做清单、作品集、修身养性，都是你的。</span>
+        </div>
+
+      </section>
+
+      <!-- =================== 库存 =================== -->
+      <section class="view view-inventory" data-view="inventory">
+
+        <header class="page-header">
+          <button class="back-btn" data-back>
+            <svg viewBox="0 0 24 24" width="22" height="22"><path d="M15 6l-6 6 6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+          <div class="page-title">
+            <div class="page-title-zh">聼说的<span class="accent">缝纫</span>工作台</div>
+            <div class="page-title-sub" id="invDateLine">7月25日 · 周六</div>
+          </div>
+          <button class="ghost-btn" data-action="new-material">登记</button>
+        </header>
+
+        <div class="inv-summary">
+          <div class="inv-stat">
+            <div class="inv-stat-num" id="invTotalKinds">0</div>
+            <div class="inv-stat-label">种物料</div>
+          </div>
+          <div class="inv-stat">
+            <div class="inv-stat-num" id="invTotalQty">0</div>
+            <div class="inv-stat-label">总库存量</div>
+          </div>
+          <div class="inv-stat warn">
+            <div class="inv-stat-num" id="invLowCount">0</div>
+            <div class="inv-stat-label">待补货</div>
+          </div>
+        </div>
+
+        <div class="inv-filter">
+          <button class="chip chip-active" data-filter="all">全部</button>
+          <button class="chip" data-filter="fabric">布料</button>
+          <button class="chip" data-filter="lining">里布</button>
+          <button class="chip" data-filter="zipper">拉链</button>
+          <button class="chip" data-filter="button">扣子</button>
+          <button class="chip" data-filter="tool">工具</button>
+        </div>
+
+        <div class="inv-list" id="invList">
+          <!-- 由 JS 渲染 -->
+        </div>
+
+        <button class="fab" data-action="new-material" aria-label="登记新物料">
+          <svg viewBox="0 0 24 24" width="22" height="22"><path d="M12 5v14M5 12h14" stroke="#FBF6EE" stroke-width="2.4" stroke-linecap="round"/></svg>
+        </button>
+
+      </section>
+
+      <!-- =================== 排单 =================== -->
+      <section class="view view-orders" data-view="orders">
+
+        <header class="page-header">
+          <button class="back-btn" data-back>
+            <svg viewBox="0 0 24 24" width="22" height="22"><path d="M15 6l-6 6 6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+          <div class="page-title">
+            <div class="page-title-zh">聼说的<span class="accent">缝纫</span>工作台</div>
+            <div class="page-title-sub" id="ordDateLine">7月25日 · 周六</div>
+          </div>
+          <button class="ghost-btn" data-action="new-order">+ 新排单</button>
+        </header>
+
+        <h2 class="section-h">手作排单进度中心</h2>
+
+        <div class="seg-tabs">
+          <button class="seg-tab seg-active" data-seg="kanban">看板</button>
+          <button class="seg-tab" data-seg="list">列表排序</button>
+          <button class="seg-tab" data-seg="wishlist">想做清单</button>
+        </div>
+
+        <!-- 看板 -->
+        <div class="seg-pane seg-pane-active" data-pane="kanban">
+          <div class="kanban-hint">← 左右滑动查看 · 长按卡片拖到别的阶段 →</div>
+          <div class="kanban-wrap" id="kanbanWrap">
+            <!-- 横向滑动容器 -->
+          </div>
+        </div>
+
+        <!-- 列表排序 -->
+        <div class="seg-pane" data-pane="list">
+          <div class="order-list" id="orderList"></div>
+        </div>
+
+        <!-- 想做清单 -->
+        <div class="seg-pane" data-pane="wishlist">
+          <div class="order-list" id="wishList"></div>
+        </div>
+
+        <button class="fab fab-red" data-action="new-order" aria-label="新增排单">
+          <svg viewBox="0 0 24 24" width="22" height="22"><path d="M12 5v14M5 12h14" stroke="#FBF6EE" stroke-width="2.4" stroke-linecap="round"/></svg>
+        </button>
+
+      </section>
+
+      <!-- =================== 记录灵感 =================== -->
+      <section class="view view-inspiration" data-view="inspiration">
+
+        <header class="page-header">
+          <button class="back-btn" data-back>
+            <svg viewBox="0 0 24 24" width="22" height="22"><path d="M15 6l-6 6 6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+          <div class="page-title">
+            <div class="page-title-zh">记录灵感</div>
+            <div class="page-title-sub" id="inspCountLine">共 0 条灵感</div>
+          </div>
+          <button class="ghost-btn" data-action="new-inspiration">+ 记一条</button>
+        </header>
+
+        <!-- 搜索栏 -->
+        <div class="insp-search-bar">
+          <svg class="insp-search-icon" viewBox="0 0 24 24" width="16" height="16"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2"/><line x1="16" y1="16" x2="21" y2="21" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+          <input class="insp-search-input" id="inspSearchInput" placeholder="搜索标题、标签、简介…" />
+          <button class="insp-search-clear" id="inspSearchClear" aria-label="清除">✕</button>
+        </div>
+
+        <div class="insp-feed insp-grid" id="inspFeed"></div>
+
+        <button class="fab fab-red" data-action="new-inspiration" aria-label="记录灵感">
+          <svg viewBox="0 0 24 24" width="22" height="22"><path d="M12 5v14M5 12h14" stroke="#FBF6EE" stroke-width="2.4" stroke-linecap="round"/></svg>
+        </button>
+
+      </section>
+
+      <!-- =================== 更多 =================== -->
+      <section class="view view-more" data-view="more">
+
+        <header class="page-header">
+          <button class="back-btn" data-back>
+            <svg viewBox="0 0 24 24" width="22" height="22"><path d="M15 6l-6 6 6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+          <div class="page-title">
+            <div class="page-title-zh">聼说的<span class="accent">缝纫</span>工作台</div>
+            <div class="page-title-sub" id="moreDateLine">7月25日 · 周六</div>
+          </div>
+          <span style="width:32px"></span>
+        </header>
+
+        <!-- 成品复盘 · 作品集 -->
+        <div class="more-row" data-go="portfolio">
+          <div class="more-row-icon">
+            <svg viewBox="0 0 24 24" width="20" height="20"><rect x="3" y="5" width="18" height="14" rx="2" fill="none" stroke="currentColor" stroke-width="1.8"/><circle cx="8" cy="10" r="1.5" fill="currentColor"/><path d="M21 17l-5-5-9 7" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+          </div>
+          <div class="more-row-text">成品复盘 · 作品集</div>
+          <span class="more-row-arrow">›</span>
+        </div>
+
+        <hr class="more-divider"/>
+
+        <!-- 收支统计 -->
+        <div class="section-title sm">
+          <span class="dot-mark"></span>收支统计
+        </div>
+
+        <div class="stats-overview" id="statsOverview">
+          <!-- 由 JS 渲染 -->
+        </div>
+
+        <div class="stats-breakdown" id="statsBreakdown">
+          <!-- 由 JS 渲染 -->
+        </div>
+
+        <hr class="more-divider"/>
+
+        <!-- 数据与备份 -->
+        <div class="section-title sm">
+          <span class="dot-mark"></span>数据与备份
+        </div>
+
+        <div class="backup-card">
+          <p class="backup-desc">数据存在本机浏览器。换设备 / 多设备同步时：在这台点「备份到 iCloud 文件」→ 选 iCloud Drive 保存；在另一台（iPhone / iPad）点「从 iCloud 文件恢复」选同一文件即可同步。建议重要改动后顺手备份一次。</p>
+          <div class="backup-actions">
+            <button class="qa-btn qa-brown full" data-action="backup">⬇ 备份到 iCloud 文件</button>
+            <button class="qa-btn qa-cream full" data-action="restore">⬆ 从 iCloud 文件恢复</button>
+          </div>
+          <div class="backup-actions">
+            <button class="qa-btn qa-cream full" data-action="seed">✨ 载入示例数据</button>
+            <button class="qa-btn qa-red full" data-action="clear">清空全部</button>
+          </div>
+        </div>
+
+        <div class="reminder-card">
+          <div class="reminder-label">每日提醒时间</div>
+          <div class="reminder-time">
+            <button class="time-pill" data-action="set-time"><span id="reminderTime">09:00</span></button>
+          </div>
+          <p class="reminder-desc">打开 App 到点后会提醒你「去看看灵感 / 挑一件想做的」。想要每天自动推送全网爆款教程，可用配套的定时任务。</p>
+        </div>
+
+        <div class="version-line">🐾 聼说的缝纫工作台 · v1.1</div>
+
+      </section>
+
+      <!-- =================== 修身养性 =================== -->
+      <section class="view view-wellness" data-view="wellness">
+
+        <header class="page-header">
+          <button class="back-btn" data-back>
+            <svg viewBox="0 0 24 24" width="22" height="22"><path d="M15 6l-6 6 6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+          <div class="page-title">
+            <div class="page-title-zh">聼说的<span class="accent">修身</span>养性</div>
+            <div class="page-title-sub" id="wellnessDateLine">7月28日 · 周二</div>
+          </div>
+          <span style="width:32px"></span>
+        </header>
+
+        <div class="seg-tabs seg-tabs-wellness">
+          <button class="seg-tab seg-active" data-wseg="weight">体重</button>
+          <button class="seg-tab" data-wseg="news">新闻</button>
+          <button class="seg-tab" data-wseg="book">好书</button>
+          <button class="seg-tab" data-wseg="treehole">树洞</button>
+          <button class="seg-tab" data-wseg="travel">旅行</button>
+        </div>
+
+        <!-- 体重记录 -->
+        <div class="seg-pane seg-pane-active" data-wpane="weight">
+          <div class="wellness-section">
+            <div class="weight-overview" id="weightOverview"></div>
+            <div class="weight-chart-wrap" id="weightChartWrap">
+              <!-- SVG 曲线图由 JS 渲染 -->
+            </div>
+            <div class="weight-list" id="weightList">
+              <!-- 体重记录列表由 JS 渲染 -->
+            </div>
+          </div>
+          <button class="fab fab-red" data-action="new-weight" aria-label="记录体重">
+            <svg viewBox="0 0 24 24" width="22" height="22"><path d="M12 5v14M5 12h14" stroke="#FBF6EE" stroke-width="2.4" stroke-linecap="round"/></svg>
+          </button>
+        </div>
+
+        <!-- 新闻热点 -->
+        <div class="seg-pane" data-wpane="news">
+          <div class="wellness-section">
+            <div class="news-hint">📋 每日精选百度 / 微博热点，附概括内容</div>
+            <div class="news-list" id="newsList">
+              <!-- 新闻热点由 JS 渲染 -->
+            </div>
+            <button class="qa-btn qa-cream full" id="refreshNewsBtn">🔄 刷新新闻</button>
+          </div>
+        </div>
+
+        <!-- 好书推荐 -->
+        <div class="seg-pane" data-wpane="book">
+          <div class="wellness-section">
+            <div class="book-hint">📖 每日推荐三本好书，含书本介绍、作者介绍与经典片段</div>
+            <div class="book-card" id="bookCard">
+              <!-- 好书推荐由 JS 渲染 -->
+            </div>
+            <button class="qa-btn qa-cream full" id="refreshBookBtn">🎲 换一批</button>
+          </div>
+        </div>
+
+        <!-- 树洞 -->
+        <div class="seg-pane" data-wpane="treehole">
+          <div class="wellness-section">
+            <div class="treehole-hint">🌳 把想法丢进树洞，只有你自己能看到</div>
+            <div class="treehole-list" id="treeholeList">
+              <!-- 树洞记录由 JS 渲染 -->
+            </div>
+          </div>
+          <button class="fab fab-red" data-action="new-thought" aria-label="记录想法">
+            <svg viewBox="0 0 24 24" width="22" height="22"><path d="M12 5v14M5 12h14" stroke="#FBF6EE" stroke-width="2.4" stroke-linecap="round"/></svg>
+          </button>
+        </div>
+
+        <!-- 旅行计划 -->
+        <div class="seg-pane" data-wpane="travel">
+          <div class="wellness-section">
+            <div class="travel-hint">✈️ 记录想去的地方和旅行计划</div>
+            <div class="travel-list" id="travelList">
+              <!-- 旅行计划由 JS 渲染 -->
+            </div>
+          </div>
+          <button class="fab fab-red" data-action="new-travel" aria-label="添加旅行计划">
+            <svg viewBox="0 0 24 24" width="22" height="22"><path d="M12 5v14M5 12h14" stroke="#FBF6EE" stroke-width="2.4" stroke-linecap="round"/></svg>
+          </button>
+        </div>
+
+      </section>
+
+      <!-- =================== 想做清单 =================== -->
+      <section class="view view-wishlist" data-view="wishlist">
+
+        <header class="page-header">
+          <button class="back-btn" data-back>
+            <svg viewBox="0 0 24 24" width="22" height="22"><path d="M15 6l-6 6 6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+          <div class="page-title">
+            <div class="page-title-zh">聼说的<span class="accent">缝纫</span>工作台</div>
+            <div class="page-title-sub">想做清单</div>
+          </div>
+          <span style="width:32px"></span>
+        </header>
+
+        <div class="wl-tip">从记录灵感加来的、想要尝试的手作。点 ✓ 可以标记完成并上传成品照到作品集。</div>
+
+        <div class="order-list" id="wishListFull"></div>
+
+      </section>
+
+      <!-- =================== 作品集 =================== -->
+      <section class="view view-portfolio" data-view="portfolio">
+
+        <header class="page-header">
+          <button class="back-btn" data-back>
+            <svg viewBox="0 0 24 24" width="22" height="22"><path d="M15 6l-6 6 6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+          <div class="page-title">
+            <div class="page-title-zh">聼说的<span class="accent">缝纫</span>工作台</div>
+            <div class="page-title-sub">作品集 · 成品复盘</div>
+          </div>
+          <span style="width:32px"></span>
+        </header>
+
+        <div class="portfolio-meta">
+          <div><strong id="portCount">0</strong> 件成品</div>
+          <div>累计收入 <strong id="portIncome">¥0</strong></div>
+        </div>
+
+        <div class="portfolio-grid" id="portfolioGrid"></div>
+
+      </section>
+
+      <!-- ============== 底部 Tab Bar ============== -->
+      <nav class="tab-bar">
+        <button class="tab tab-active" data-tab="workbench">
+          <svg viewBox="0 0 24 24" width="22" height="22"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1v-9z" fill="currentColor"/></svg>
+          <span>工作台</span>
+        </button>
+        <button class="tab" data-tab="inventory">
+          <svg viewBox="0 0 24 24" width="22" height="22"><rect x="3" y="5" width="18" height="16" rx="2" fill="none" stroke="currentColor" stroke-width="1.8"/><line x1="3" y1="10" x2="21" y2="10" stroke="currentColor" stroke-width="1.8"/><line x1="8" y1="3" x2="8" y2="7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><line x1="16" y1="3" x2="16" y2="7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+          <span>库存</span>
+        </button>
+        <button class="tab" data-tab="orders">
+          <svg viewBox="0 0 24 24" width="22" height="22"><circle cx="12" cy="13" r="8" fill="none" stroke="currentColor" stroke-width="1.8"/><line x1="12" y1="13" x2="12" y2="9" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><line x1="12" y1="13" x2="15" y2="13" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+          <span>排单</span>
+        </button>
+        <button class="tab" data-tab="inspiration">
+          <svg viewBox="0 0 24 24" width="22" height="22"><polygon points="12,3 14.6,9 21,9.5 16,14 17.5,20.5 12,17 6.5,20.5 8,14 3,9.5 9.4,9" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+          <span>记录</span>
+        </button>
+        <button class="tab" data-tab="more">
+          <svg viewBox="0 0 24 24" width="22" height="22"><rect x="3" y="3" width="7" height="7" rx="1.2" fill="currentColor"/><rect x="14" y="3" width="7" height="7" rx="1.2" fill="currentColor"/><rect x="3" y="14" width="7" height="7" rx="1.2" fill="currentColor"/><rect x="14" y="14" width="7" height="7" rx="1.2" fill="currentColor"/></svg>
+          <span>更多</span>
+        </button>
+      </nav>
+
+    </div><!-- /.app -->
+
+<!-- ============== 底部抽屉 / 表单 ============== -->
+
+<!-- 登记新物料 -->
+<div class="sheet" id="sheetMaterial" aria-hidden="true">
+  <div class="sheet-backdrop" data-close></div>
+  <div class="sheet-panel">
+    <div class="sheet-handle"></div>
+    <h3 class="sheet-title">登记新物料 🧶</h3>
+    <div class="form">
+      <label class="field">
+        <span class="field-label">类型</span>
+        <div class="seg-row" data-name="category" data-value="fabric">
+          <button type="button" class="seg-pill seg-pill-active" data-pick="fabric">布料</button>
+          <button type="button" class="seg-pill" data-pick="lining">里布</button>
+          <button type="button" class="seg-pill" data-pick="zipper">拉链</button>
+          <button type="button" class="seg-pill" data-pick="button">扣子</button>
+          <button type="button" class="seg-pill" data-pick="tool">工具</button>
+        </div>
+      </label>
+
+      <label class="field">
+        <span class="field-label">图片</span>
+        <div class="photo-upload" data-photo>
+          <span>点此拍照 / 选图</span>
+          <input type="file" accept="image/*" hidden data-photo-input />
+        </div>
+      </label>
+
+      <label class="field">
+        <span class="field-label">名称 *</span>
+        <input class="text-input" data-name="name" placeholder="如：日系格子棉布 / YKK 5号拉链 / 兄弟牌缝纫线" />
+      </label>
+
+      <div class="row-2">
+        <label class="field">
+          <span class="field-label">材质</span>
+          <input class="text-input" data-name="material" placeholder="纯棉 / 亚麻…" />
+        </label>
+        <label class="field">
+          <span class="field-label">颜色 / 花色</span>
+          <input class="text-input" data-name="color" placeholder="米白 / 碎花…" />
+        </label>
+      </div>
+
+      <label class="field">
+        <span class="field-label">分类标签</span>
+        <input class="text-input" data-name="tags" placeholder="如：拉链 / 衬布 / 剪裁工具 / 熨烫工具" />
+      </label>
+
+      <div class="row-2">
+        <label class="field">
+          <span class="field-label">总量</span>
+          <input class="text-input" type="number" data-name="total" placeholder="0" />
+        </label>
+        <label class="field">
+          <span class="field-label">剩余</span>
+          <input class="text-input" type="number" data-name="remaining" placeholder="0" />
+        </label>
+      </div>
+
+      <div class="row-2">
+        <label class="field">
+          <span class="field-label">单位</span>
+          <input class="text-input" data-name="unit" value="米" />
+        </label>
+        <label class="field">
+          <span class="field-label">购入价(总)</span>
+          <input class="text-input" type="number" data-name="price" placeholder="¥" />
+        </label>
+      </div>
+
+      <label class="field">
+        <span class="field-label">低库存提醒阈值</span>
+        <input class="text-input" type="number" data-name="threshold" placeholder="低于此数会标记为待补货" />
+      </label>
+
+      <label class="field">
+        <span class="field-label">备注</span>
+        <textarea class="text-input" data-name="note" placeholder="这条布料哪儿买的、好不好用…"></textarea>
+      </label>
+
+      <button class="qa-btn qa-red full" data-save="material">保存物料</button>
+    </div>
+  </div>
+</div>
+
+<!-- 记录体重 -->
+<div class="sheet" id="sheetWeight" aria-hidden="true">
+  <div class="sheet-backdrop" data-close></div>
+  <div class="sheet-panel">
+    <div class="sheet-handle"></div>
+    <h3 class="sheet-title">记录体重 ⚖️</h3>
+    <div class="form">
+      <div class="row-2">
+        <label class="field">
+          <span class="field-label">日期</span>
+          <input class="text-input" type="date" data-name="date" id="weightDateInput" />
+        </label>
+        <label class="field">
+          <span class="field-label">体重 (kg) *</span>
+          <input class="text-input" type="number" step="0.1" data-name="weight" placeholder="如：58.5" />
+        </label>
+      </div>
+      <label class="field">
+        <span class="field-label">备注</span>
+        <input class="text-input" data-name="note" placeholder="如：空腹 / 饭后 / 运动后" />
+      </label>
+      <button class="qa-btn qa-red full" data-save="weight">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- 树洞记录 -->
+<div class="sheet" id="sheetThought" aria-hidden="true">
+  <div class="sheet-backdrop" data-close></div>
+  <div class="sheet-panel">
+    <div class="sheet-handle"></div>
+    <h3 class="sheet-title">写进树洞 🌳</h3>
+    <div class="form">
+      <label class="field">
+        <span class="field-label">心情</span>
+        <div class="seg-row" data-name="mood" data-value="calm">
+          <button type="button" class="seg-pill seg-pill-active" data-pick="happy">😊 开心</button>
+          <button type="button" class="seg-pill" data-pick="calm">😌 平静</button>
+          <button type="button" class="seg-pill" data-pick="sad">😢 难过</button>
+          <button type="button" class="seg-pill" data-pick="angry">😤 愤怒</button>
+          <button type="button" class="seg-pill" data-pick="tired">😴 疲惫</button>
+        </div>
+      </label>
+      <label class="field">
+        <span class="field-label">想说的话 *</span>
+        <textarea class="text-input" data-name="content" rows="5" placeholder="把想法写下来，只有你自己能看到…"></textarea>
+      </label>
+      <button class="qa-btn qa-red full" data-save="thought">丢进树洞</button>
+    </div>
+  </div>
+</div>
+
+<!-- 旅行计划 -->
+<div class="sheet" id="sheetTravel" aria-hidden="true">
+  <div class="sheet-backdrop" data-close></div>
+  <div class="sheet-panel">
+    <div class="sheet-handle"></div>
+    <h3 class="sheet-title">旅行计划 ✈️</h3>
+    <div class="form">
+      <label class="field">
+        <span class="field-label">目的地 *</span>
+        <input class="text-input" data-name="destination" placeholder="如：大理 / 京都 / 冰岛" />
+      </label>
+      <div class="row-2">
+        <label class="field">
+          <span class="field-label">出发日期</span>
+          <input class="text-input" type="date" data-name="startDate" />
+        </label>
+        <label class="field">
+          <span class="field-label">返回日期</span>
+          <input class="text-input" type="date" data-name="endDate" />
+        </label>
+      </div>
+      <label class="field">
+        <span class="field-label">状态</span>
+        <div class="seg-row" data-name="status" data-value="dreaming">
+          <button type="button" class="seg-pill seg-pill-active" data-pick="dreaming">💭 想去</button>
+          <button type="button" class="seg-pill" data-pick="planning">📋 计划中</button>
+          <button type="button" class="seg-pill" data-pick="done">✅ 已完成</button>
+        </div>
+      </label>
+      <div class="row-2">
+        <label class="field">
+          <span class="field-label">预算 (¥)</span>
+          <input class="text-input" type="number" data-name="budget" placeholder="0" />
+        </label>
+        <label class="field">
+          <span class="field-label">天数</span>
+          <input class="text-input" type="number" data-name="days" placeholder="如：5" />
+        </label>
+      </div>
+      <label class="field">
+        <span class="field-label">备注 / 想做的事</span>
+        <textarea class="text-input" data-name="note" rows="3" placeholder="想去的景点、想吃的美食、注意事项…"></textarea>
+      </label>
+      <button class="qa-btn qa-red full" data-save="travel">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- 新排单 -->
+<div class="sheet" id="sheetOrder" aria-hidden="true">
+  <div class="sheet-backdrop" data-close></div>
+  <div class="sheet-panel">
+    <div class="sheet-handle"></div>
+    <h3 class="sheet-title">新建排单 ✂️</h3>
+    <div class="form">
+      <label class="field">
+        <span class="field-label">作品名 *</span>
+        <input class="text-input" data-name="name" placeholder="如：一字拉链卡包 / 法式抱枕" />
+      </label>
+
+      <label class="field">
+        <span class="field-label">类别</span>
+        <div class="seg-row" data-name="category" data-value="bag">
+          <button type="button" class="seg-pill seg-pill-active" data-pick="bag">包包</button>
+          <button type="button" class="seg-pill" data-pick="clothes">服饰</button>
+          <button type="button" class="seg-pill" data-pick="home">家居</button>
+          <button type="button" class="seg-pill" data-pick="toy">玩偶</button>
+        </div>
+      </label>
+
+      <label class="field">
+        <span class="field-label">目前进度</span>
+        <div class="seg-row" data-name="stage" data-value="queue">
+          <button type="button" class="seg-pill seg-pill-active" data-pick="queue">排队中</button>
+          <button type="button" class="seg-pill" data-pick="cut">裁剪</button>
+          <button type="button" class="seg-pill" data-pick="sew">缝制</button>
+          <button type="button" class="seg-pill" data-pick="pack">包装</button>
+        </div>
+      </label>
+
+      <label class="field">
+        <span class="field-label">封面图</span>
+        <div class="photo-upload" data-photo>
+          <span>点此拍照 / 选图</span>
+          <input type="file" accept="image/*" hidden data-photo-input />
+        </div>
+      </label>
+
+      <div class="row-2">
+        <label class="field">
+          <span class="field-label">尺码</span>
+          <input class="text-input" data-name="size" placeholder="均码 / S / 30cm…" />
+        </label>
+        <label class="field">
+          <span class="field-label">数量</span>
+          <input class="text-input" type="number" data-name="qty" value="1" />
+        </label>
+      </div>
+
+      <label class="field">
+        <span class="field-label">客户 / 给自己</span>
+        <input class="text-input" data-name="customer" placeholder="可空" />
+      </label>
+
+      <label class="field">
+        <span class="field-label">约定收入 ¥</span>
+        <input class="text-input" type="number" data-name="income" placeholder="0" />
+      </label>
+
+      <label class="field">
+        <span class="field-label">所需布料（可多选，从库存选）</span>
+        <div class="picker" data-pick-list="fabrics">
+          <span class="picker-empty">点此选择</span>
+        </div>
+      </label>
+
+      <label class="field">
+        <span class="field-label">所需辅料（可多选）</span>
+        <div class="picker" data-pick-list="buckles">
+          <span class="picker-empty">点此选择</span>
+        </div>
+      </label>
+
+      <label class="field">
+        <span class="field-label">备注</span>
+        <textarea class="text-input" data-name="note" placeholder="做法、灵感来源、注意事项…"></textarea>
+      </label>
+
+      <button class="qa-btn qa-red full" data-save="order">加入排单</button>
+    </div>
+  </div>
+</div>
+
+<!-- 记录灵感 -->
+<div class="sheet" id="sheetInspiration" aria-hidden="true">
+  <div class="sheet-backdrop" data-close></div>
+  <div class="sheet-panel">
+    <div class="sheet-handle"></div>
+    <h3 class="sheet-title">记录一条灵感 ✏️</h3>
+    <div class="form">
+      <label class="field">
+        <span class="field-label">标题 *</span>
+        <input class="text-input" data-name="title" placeholder="给这条灵感起个名字" />
+      </label>
+
+      <label class="field">
+        <span class="field-label">封面图</span>
+        <div class="photo-upload" data-photo>
+          <span>点此拍照 / 选图</span>
+          <input type="file" accept="image/*" hidden data-photo-input />
+        </div>
+      </label>
+
+      <label class="field">
+        <span class="field-label">简介</span>
+        <input class="text-input" data-name="desc" placeholder="一句话描述这条灵感" />
+      </label>
+
+      <label class="field">
+        <span class="field-label">标签（用 / 分隔）</span>
+        <input class="text-input" data-name="tags" placeholder="拉链 / 卡包 / 入门" />
+      </label>
+
+      <label class="field">
+        <span class="field-label">灵感来源链接（选填，方便去学）</span>
+        <input class="text-input" data-name="source" placeholder="教程 / 视频 / 帖子链接 https://…" />
+      </label>
+
+      <label class="field">
+        <span class="field-label">图纸（选填，可多张）</span>
+        <div class="bp-box" data-bp-box>
+          <button type="button" class="bp-add" data-bp-add>📐 添加图纸</button>
+          <input type="file" accept="image/*" multiple hidden data-bp-input />
+          <div class="bp-preview" data-bp-preview></div>
+        </div>
+      </label>
+
+      <button class="qa-btn qa-red full" data-save="inspiration">保存灵感</button>
+    </div>
+  </div>
+</div>
+
+<!-- 完成作品（上传成品照） -->
+<div class="sheet" id="sheetComplete" aria-hidden="true">
+  <div class="sheet-backdrop" data-close></div>
+  <div class="sheet-panel">
+    <div class="sheet-handle"></div>
+    <h3 class="sheet-title">收工啦 🎉 上传成品照</h3>
+    <div class="form">
+      <label class="field">
+        <span class="field-label">作品名</span>
+        <input class="text-input" data-name="name" />
+      </label>
+      <label class="field">
+        <span class="field-label">成品照片</span>
+        <div class="photo-upload" data-photo>
+          <span>点此拍照 / 选图（可多张）</span>
+          <input type="file" accept="image/*" multiple hidden data-photo-input />
+        </div>
+      </label>
+      <div class="row-2">
+        <label class="field">
+          <span class="field-label">尺码</span>
+          <input class="text-input" data-name="size" />
+        </label>
+        <label class="field">
+          <span class="field-label">实际收入 ¥</span>
+          <input class="text-input" type="number" data-name="income" />
+        </label>
+      </div>
+      <label class="field">
+        <span class="field-label">复盘笔记</span>
+        <textarea class="text-input" data-name="note" placeholder="踩过的坑、下次想改的地方…"></textarea>
+      </label>
+      <button class="qa-btn qa-red full" data-save="complete">归入作品集</button>
+    </div>
+  </div>
+</div>
+
+<!-- 编辑每日提醒 -->
+<div class="sheet" id="sheetTime" aria-hidden="true">
+  <div class="sheet-backdrop" data-close></div>
+  <div class="sheet-panel">
+    <div class="sheet-handle"></div>
+    <h3 class="sheet-title">每日提醒时间 ⏰</h3>
+    <div class="form">
+      <label class="field">
+        <span class="field-label">时间</span>
+        <input class="text-input" type="time" id="reminderTimeInput" />
+      </label>
+      <button class="qa-btn qa-red full" data-save="time">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- 列表多选 picker -->
+<div class="sheet" id="sheetPicker" aria-hidden="true">
+  <div class="sheet-backdrop" data-close></div>
+  <div class="sheet-panel">
+    <div class="sheet-handle"></div>
+    <h3 class="sheet-title" id="pickerTitle">选择</h3>
+    <div class="picker-list" id="pickerList"></div>
+    <button class="qa-btn qa-red full" data-picker-confirm>确定</button>
+  </div>
+</div>
+
+<!-- 编辑想做清单 -->
+<div class="sheet" id="sheetWishlist" aria-hidden="true">
+  <div class="sheet-backdrop" data-close></div>
+  <div class="sheet-panel">
+    <div class="sheet-handle"></div>
+    <h3 class="sheet-title">编辑想做清单 ✏️</h3>
+    <div class="form">
+      <label class="field">
+        <span class="field-label">名称 *</span>
+        <input class="text-input" data-name="name" placeholder="作品名称" />
+      </label>
+      <label class="field">
+        <span class="field-label">标签（用 / 分隔）</span>
+        <input class="text-input" data-name="tags" placeholder="拉链 / 卡包" />
+      </label>
+      <label class="field">
+        <span class="field-label">备注</span>
+        <textarea class="text-input" data-name="note" placeholder="想用什么布料、给谁做…"></textarea>
+      </label>
+      <button class="qa-btn qa-red full" data-save="wishlist">保存修改</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<!-- 链接弹窗（灵感直达链接复制） -->
+<div class="sheet" id="sheetLink" aria-hidden="true">
+  <div class="sheet-backdrop" data-close></div>
+  <div class="sheet-panel link-panel">
+    <div class="sheet-handle"></div>
+    <div class="link-pop-head">
+      <span class="link-pop-plat" id="linkPopPlat">抖音</span>
+      <h3 class="link-pop-title" id="linkPopTitle">灵感链接</h3>
+    </div>
+    <div class="link-box">
+      <input class="link-url-input" id="linkPopUrl" readonly spellcheck="false" />
+      <button class="link-copy-btn" id="linkCopyBtn" type="button">复制</button>
+    </div>
+    <button class="qa-btn qa-red full" id="linkPopOpen" type="button">🌐 在浏览器打开</button>
+    <p class="link-tip" id="linkPopTip">📋 复制链接后，打开对应 APP 粘贴即可查看</p>
+    <button class="qa-btn qa-cream full" type="button" data-close>知道了</button>
+  </div>
+</div>
+
+<!-- 图纸查看灯箱 -->
+<div class="lightbox" id="imgLightbox" aria-hidden="true">
+  <div class="lightbox-backdrop" data-lb-close></div>
+  <div class="lightbox-stage">
+    <img class="lightbox-img" id="lbImg" alt="图纸" />
+    <button class="lightbox-close" data-lb-close aria-label="关闭">✕</button>
+    <button class="lightbox-nav lb-prev" data-lb-nav="-1" aria-label="上一张">‹</button>
+    <button class="lightbox-nav lb-next" data-lb-nav="1" aria-label="下一张">›</button>
+    <div class="lightbox-count" id="lbCount"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="app.js"></script>
+</body>
+</html>
