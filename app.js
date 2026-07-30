@@ -894,7 +894,6 @@ function refreshWellness() {
   if (wellnessTab === 'weight') refreshWeight();
   if (wellnessTab === 'news') refreshNews();
   if (wellnessTab === 'book') refreshBook();
-  if (wellnessTab === 'treehole') refreshTreehole();
   if (wellnessTab === 'travel') refreshTravel();
   if (wellnessTab === 'memo') refreshMemo();
 }
@@ -2926,7 +2925,7 @@ document.addEventListener('DOMContentLoaded', () => {
   bind();
 
   // hash 路由：#inventory / #orders / … / #wellness/news（修身养性子页签）
-  const WELLNESS_TABS = ['weight','book','treehole','travel','memo'];
+  const WELLNESS_TABS = ['weight','book','travel','memo'];
   function applyHashRoute() {
     if (suppressHashRoute) { suppressHashRoute = false; return; }
     const raw = (location.hash || '#workbench').slice(1);
