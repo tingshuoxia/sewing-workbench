@@ -329,9 +329,8 @@
         </header>
 
         <div class="seg-tabs seg-tabs-wellness">
-          <button class="seg-tab seg-active" data-wseg="weight">体重</button>
-          <button class="seg-tab" data-wseg="book">好书</button>
-          <button class="seg-tab" data-wseg="treehole">树洞</button>
+          <button class="seg-tab seg-active" data-wseg="weight">健康</button>
+          <button class="seg-tab" data-wseg="book">阅读</button>
           <button class="seg-tab" data-wseg="travel">旅行</button>
           <button class="seg-tab" data-wseg="memo">备忘</button>
         </div>
@@ -379,25 +378,12 @@
         <!-- 好书推荐 -->
         <div class="seg-pane" data-wpane="book">
           <div class="wellness-section">
-            <div class="book-hint">📖 每日推荐三本好书，含书本介绍、作者介绍与经典片段</div>
+            <div class="book-hint">📖 每日推荐三本好书，含书本介绍、作者介绍与经典片段，慢慢读</div>
             <div class="book-card" id="bookCard">
               <!-- 好书推荐由 JS 渲染 -->
             </div>
             <button class="qa-btn qa-cream full" id="refreshBookBtn">🎲 换一批</button>
           </div>
-        </div>
-
-        <!-- 树洞 -->
-        <div class="seg-pane" data-wpane="treehole">
-          <div class="wellness-section">
-            <div class="treehole-hint">🌳 把想法丢进树洞，只有你自己能看到</div>
-            <div class="treehole-list" id="treeholeList">
-              <!-- 树洞记录由 JS 渲染 -->
-            </div>
-          </div>
-          <button class="fab fab-red" data-action="new-thought" aria-label="记录想法">
-            <svg viewBox="0 0 24 24" width="22" height="22"><path d="M12 5v14M5 12h14" stroke="#FBF6EE" stroke-width="2.4" stroke-linecap="round"/></svg>
-          </button>
         </div>
 
         <!-- 旅行计划 -->
