@@ -4,7 +4,7 @@
    策略：stale-while-revalidate（返回缓存的同时后台更新）
    ========================================================== */
 
-const CACHE_NAME = 'sewing-workbench-v16';
+const CACHE_NAME = 'sewing-workbench-v17';
 const CORE_ASSETS = [
   './',
   './index.html',

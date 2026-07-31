@@ -197,21 +197,30 @@ function migrateInspirationUrls(data) {
 
 let state = loadState();
 
-/* ---------- 启动自愈：localStorage 被清但 IndexedDB 镜像还在 → 自动恢复 ---------- */
-(function autoRestore() {
+/* ---------- 启动自愈：以 IndexedDB 为主存储，localStorage 仅作缓存 ----------
+   修复：原先先写 localStorage，配额超限会抛错导致 IndexedDB 镜像也写不进，
+   PWA 退出后数据被清空、重开只剩种子数据。现改为优先写 IndexedDB，并以
+   _savedAt 时间戳比较，确保两者中较新的一份成为真相来源。 */
+(function boot() {
   if (!('indexedDB' in window)) return;
-  if (localStorage.getItem(STORAGE_KEY)) {
-    // 数据正常（含手动导入备份的情况），顺手刷新一次镜像
-    idbSet(STORAGE_KEY, JSON.stringify(state));
-    return;
-  }
-  idbGet(STORAGE_KEY).then(json => {
-    if (!json) return;
-    try { JSON.parse(json); } catch (e) { return; }
-    localStorage.setItem(STORAGE_KEY, json);
-    localStorage.setItem(STORAGE_KEY + '_restored', '1');
-    location.reload();
-  });
+  const lsRaw = localStorage.getItem(STORAGE_KEY);
+  let lsTime = 0;
+  try { const p = JSON.parse(lsRaw); if (p && p._savedAt) lsTime = p._savedAt; } catch (e) {}
+  idbGet(STORAGE_KEY).then(idbJson => {
+    let idbTime = 0;
+    try { const p = JSON.parse(idbJson); if (p && p._savedAt) idbTime = p._savedAt; } catch (e) {}
+    if (idbTime && idbTime > lsTime) {
+      // IndexedDB 更新 → 以它为准，刷新缓存并重载
+      localStorage.setItem(STORAGE_KEY, idbJson);
+      localStorage.setItem(STORAGE_KEY + '_restored', '1');
+      location.reload();
+      return;
+    }
+    if (!idbJson && lsRaw) {
+      // 仅 localStorage 有 → 补写镜像
+      idbSet(STORAGE_KEY, lsRaw);
+    }
+  }).catch(() => {});
 })();
 
 /* 恢复成功后的提示（在 reload 后的这一轮显示） */
@@ -261,12 +270,44 @@ function migrateMaterials(data) {
 }
 
 function saveState() {
+  state._savedAt = Date.now();
   const json = JSON.stringify(state);
-  localStorage.setItem(STORAGE_KEY, json);
-  idbSet(STORAGE_KEY, json); // 同步镜像到 IndexedDB，防 localStorage 被系统清除
+  // IndexedDB 配额大、PWA 下更持久，作为主存储优先写入（不依赖 localStorage 成功）
+  idbSet(STORAGE_KEY, json);
+  // localStorage 仅作快速缓存；配额超限（布料大图常触发）时忽略，不影响主存储
+  try { localStorage.setItem(STORAGE_KEY, json); }
+  catch (e) { /* 配额超限：数据已存入 IndexedDB，无需处理 */ }
 }
 
 const uid = () => 'id_' + Math.random().toString(36).slice(2, 9);
+
+/* 读取图片并等比压缩到 maxDim 以内，输出 JPEG base64，显著减小存储体积
+   （布料灵感 1:1 大图若不压缩，几张就会撑爆 localStorage 5MB 配额） */
+function fileToDataURLScaled(file, maxDim, quality) {
+  return new Promise((resolve) => {
+    if (!file || !file.type || !file.type.startsWith('image/')) { resolve(null); return; }
+    const reader = new FileReader();
+    reader.onload = ev => {
+      const img = new Image();
+      img.onload = () => {
+        const iw = img.width || maxDim, ih = img.height || maxDim;
+        const scale = Math.min(1, maxDim / Math.max(iw, ih));
+        const w = Math.max(1, Math.round(iw * scale));
+        const h = Math.max(1, Math.round(ih * scale));
+        const canvas = document.createElement('canvas');
+        canvas.width = w; canvas.height = h;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, w, h);
+        try { resolve(canvas.toDataURL('image/jpeg', quality || 0.82)); }
+        catch (e) { resolve(ev.target.result); } // 回退原图
+      };
+      img.onerror = () => resolve(ev.target.result);
+      img.src = ev.target.result;
+    };
+    reader.onerror = () => resolve(null);
+    reader.readAsDataURL(file);
+  });
+}
 
 /* ---------- Toast ---------- */
 let toastTimer;
@@ -847,20 +888,16 @@ function addFabricMakePhotos(files) {
   if (!f) return;
   const imgs = Array.from(files || []).filter(fi => fi && fi.type && fi.type.startsWith('image/'));
   if (!imgs.length) return;
-  let done = 0;
-  imgs.forEach(file => {
-    const r = new FileReader();
-    r.onload = ev => {
+  Promise.all(imgs.map(file => fileToDataURLScaled(file, 1000, 0.82))).then(results => {
+    results.forEach(dataUrl => {
+      if (!dataUrl) return;
       f.makePhotos = f.makePhotos || [];
-      f.makePhotos.push(ev.target.result);
-      if (++done === imgs.length) {
-        saveState();
-        renderFabricMakePhotos(f);
-        refreshFabric();
-        toast(`已添加 ${f.makePhotos.length} 张制作灵感照片 ✨`);
-      }
-    };
-    r.readAsDataURL(file);
+      f.makePhotos.push(dataUrl);
+    });
+    saveState();
+    renderFabricMakePhotos(f);
+    refreshFabric();
+    toast(`已添加 ${f.makePhotos.length} 张制作灵感照片 ✨`);
   });
 }
 
@@ -2857,38 +2894,31 @@ function bind() {
     row.dataset.value = pill.dataset.pick;
   });
 
-  // 照片上传
+  // 照片上传（等比压缩，避免大图撑爆 localStorage 配额）
   document.addEventListener('change', e => {
     if (!e.target.matches('[data-photo-input]')) return;
     const wrap = e.target.closest('.photo-upload');
     const files = e.target.files;
     if (!files || !files[0]) return;
-    const reader = new FileReader();
-    reader.onload = ev => {
-      wrap.style.backgroundImage = `url(${ev.target.result})`;
+    fileToDataURLScaled(files[0], 1000, 0.82).then(dataUrl => {
+      if (!dataUrl) return;
+      wrap.style.backgroundImage = `url(${dataUrl})`;
       wrap.classList.add('has-image');
       wrap.querySelector('span').style.display = 'none';
-      wrap.dataset.photo = ev.target.result;
-    };
-    reader.readAsDataURL(files[0]);
+      wrap.dataset.photo = dataUrl;
+    });
   });
 
-  // 记录灵感：图纸多图上传
+  // 记录灵感：图纸多图上传（等比压缩）
   document.addEventListener('change', e => {
     if (!e.target.matches('[data-bp-input]')) return;
     const input = e.target;
-    const files = Array.from(input.files || []);
+    const files = Array.from(input.files || []).filter(f => f && f.type && f.type.startsWith('image/'));
     input.value = '';   // 允许重复选同一张
     if (!files.length) return;
-    let done = 0;
-    files.forEach(file => {
-      if (!file.type.startsWith('image/')) { if (++done === files.length) renderBpPreview(); return; }
-      const reader = new FileReader();
-      reader.onload = ev => {
-        inspBlueprintsDraft.push(ev.target.result);
-        if (++done === files.length) renderBpPreview();
-      };
-      reader.readAsDataURL(file);
+    Promise.all(files.map(file => fileToDataURLScaled(file, 1280, 0.82))).then(results => {
+      results.forEach(d => { if (d) inspBlueprintsDraft.push(d); });
+      renderBpPreview();
     });
   });
 
