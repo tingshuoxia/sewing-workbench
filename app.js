@@ -118,6 +118,12 @@ function seedData() {
       { id: 'i6', title: '金属拉链隐藏缝法', desc: '让拉链藏起来的小技巧，颜值翻倍。',
         cover: '', tags: ['拉链', '技巧'] },
     ],
+    fabricInspirations: [
+      { id: 'f1', name: '奶油色亚麻', note: '垂感好、透气，适合做夏日罩衫和抱枕。',
+        photo: '', makePhotos: [], createdAt: Date.now() - 86400000 },
+      { id: 'f2', name: '小碎花棉布', note: '柔软亲肤，做儿童裙或发带都很可。',
+        photo: '', makePhotos: [], createdAt: Date.now() },
+    ],
     wishlist: [
       { id: 'w1', fromInspirationId: 'i1', name: '一字拉链卡包', source: 'record',
         tags: ['拉链', '卡包'], note: '' },
@@ -160,7 +166,7 @@ function seedData() {
 function emptyData() {
   return {
     inventory: [], orders: [], inspirations: [], wishlist: [], portfolio: [],
-    purchases: [], weights: [], thoughts: [], travels: [], memos: {}, settings: { reminderTime: '09:00' }
+    purchases: [], weights: [], thoughts: [], travels: [], memos: {}, fabricInspirations: [], settings: { reminderTime: '09:00' }
   };
 }
 
@@ -229,6 +235,7 @@ function loadState() {
     if (!parsed.thoughts) parsed.thoughts = [];
     if (!parsed.travels) parsed.travels = [];
     if (!parsed.memos) parsed.memos = {};
+    if (!parsed.fabricInspirations) parsed.fabricInspirations = [];
     // 迁移：将旧的灵感主页链接更新为具体的搜索/视频链接
     migrateInspirationUrls(parsed);
     // 迁移：排单物料由 [id] 兼容为 [{id,qty}]
@@ -625,6 +632,9 @@ function autoArchiveDone(order) {
 let inspSearch = '';
 let editingInspId = null;
 let inspBlueprintsDraft = [];   // 记录灵感时上传的图纸（dataURL 数组），保存时写入 it.blueprints
+let inspSubTab = 'make';        // 灵感库子标签：make=制作灵感 / fabric=布料灵感
+let currentFabricId = null;     // 当前查看的布料灵感
+let editingFabricId = null;     // 正在编辑的布料灵感（null=新增）
 
 function findInspiration(id) {
   return state.inspirations.find(i => i.id === id) || null;
@@ -656,8 +666,8 @@ function renderInspCards(items) {
           <div class="insp-actions">
             ${it.source ? `<button class="insp-source" data-insp-source="${it.id}" title="来源" aria-label="来源">🔗</button>` : ''}
             ${(it.blueprints && it.blueprints.length) ? `<button class="insp-bp" data-insp-bp="${it.id}" title="图纸" aria-label="图纸">📐</button>` : ''}
-            <button class="insp-wish ${fav ? 'on' : ''}" data-insp-fav="${it.id}">
-              ${fav ? '✓ 已想做' : '⭐ 加入想做'}
+            <button class="insp-wish ${fav ? 'on' : ''}" data-insp-fav="${it.id}" title="${fav ? '已收藏，点击取消' : '收藏这条灵感'}">
+              ${fav ? '★' : '☆'}
             </button>
           </div>
         </div>
@@ -703,6 +713,8 @@ function closeLightbox() {
 }
 
 function refreshInspiration() {
+  syncInspTabs();
+  if (inspSubTab === 'fabric') { refreshFabric(); return; }
   refreshTimeAndGreeting();
   const countLine = $('#inspCountLine');
   const q = (inspSearch || '').toLowerCase().trim();
@@ -720,6 +732,165 @@ function refreshInspiration() {
       : `共 ${state.inspirations.length} 条灵感`;
   }
   renderInspCards(items);
+}
+
+// 同步灵感库子标签的选中态、面板可见性、FAB 与右上角按钮的行为
+function syncInspTabs() {
+  $$('.seg-tabs-insp .seg-tab').forEach(t => t.classList.toggle('seg-active', t.dataset.iseg === inspSubTab));
+  $$('[data-ipane]').forEach(p => p.classList.toggle('seg-pane-active', p.dataset.ipane === inspSubTab));
+  const fab = $('#inspFab');
+  const btn = $('#inspNewBtn');
+  if (inspSubTab === 'fabric') {
+    if (fab) fab.dataset.action = 'new-fabric';
+    if (btn) { btn.dataset.action = 'new-fabric'; btn.textContent = '+ 添加布料'; }
+  } else {
+    if (fab) fab.dataset.action = 'new-inspiration';
+    if (btn) { btn.dataset.action = 'new-inspiration'; btn.textContent = '+ 记一条'; }
+  }
+}
+
+/* ---------- 布料灵感（照片上传：1:1 大图 + 多张制作灵感照片） ---------- */
+function renderFabricCards(items) {
+  const feed = $('#fabricFeed');
+  if (!feed) return;
+  if (!items.length) {
+    feed.innerHTML = `<div class="kanban-empty">还没有布料灵感，点右下角「+」添加第一块布料 🧵</div>`;
+    return;
+  }
+  feed.innerHTML = items.map(f => `
+    <div class="fabric-card" data-fab-id="${f.id}">
+      <div class="fabric-thumb">
+        ${f.photo ? `<img src="${f.photo}" alt="${escapeHtml(f.name || '')}" />` : `<span class="stub-illu">🧵</span>`}
+      </div>
+      <div class="fabric-name">${escapeHtml(f.name || '未命名布料')}</div>
+      <div class="fabric-meta">${f.makePhotos && f.makePhotos.length ? `✨ ${f.makePhotos.length} 张制作灵感` : '点击添加制作灵感'}</div>
+    </div>`).join('');
+}
+
+function refreshFabric() {
+  renderFabricCards(state.fabricInspirations.slice());
+}
+
+function openFabricSheet(editId) {
+  editingFabricId = editId || null;
+  const sheet = $('#sheetFabric');
+  if (!sheet) return;
+  openSheet('Fabric');   // 先重置（会清掉 data-photo），随后再建立
+  const wrap = sheet.querySelector('.photo-upload');
+  wrap.style.backgroundImage = '';
+  wrap.classList.remove('has-image');
+  wrap.querySelector('span').style.display = '';
+  wrap.dataset.photo = '';
+  sheet.querySelector('[data-name="name"]').value = '';
+  sheet.querySelector('[data-name="note"]').value = '';
+  sheet.querySelector('.sheet-title').textContent = editId ? '编辑布料灵感 🧵' : '添加布料灵感 🧵';
+  sheet.querySelector('[data-save="fabric"]').textContent = editId ? '保存修改' : '保存布料';
+}
+
+function saveFabricSheet() {
+  const sheet = $('#sheetFabric');
+  const name = (sheet.querySelector('[data-name="name"]').value || '').trim();
+  const note = (sheet.querySelector('[data-name="note"]').value || '').trim();
+  const photoWrap = sheet.querySelector('.photo-upload');
+  const photo = photoWrap ? (photoWrap.dataset.photo || '') : '';
+  if (!name && !photo) { toast('请填写名称或上传布料照片'); return; }
+  if (editingFabricId) {
+    const f = state.fabricInspirations.find(x => x.id === editingFabricId);
+    if (f) { f.name = name; f.note = note; f.photo = photo; }
+    editingFabricId = null;
+    toast('已更新布料灵感 🧵');
+  } else {
+    state.fabricInspirations.unshift({
+      id: uid(), name, note, photo,
+      makePhotos: [], createdAt: Date.now()
+    });
+    toast('已添加布料灵感 🧵');
+  }
+  saveState();
+  closeSheet();
+  refreshFabric();
+}
+
+function openFabricDetail(id) {
+  const f = state.fabricInspirations.find(x => x.id === id);
+  if (!f) return;
+  currentFabricId = id;
+  const img = $('#fabMainImg');
+  if (img) {
+    if (f.photo) { img.src = f.photo; img.style.display = ''; }
+    else { img.removeAttribute('src'); img.style.display = 'none'; }
+  }
+  const nameEl = $('#fabName'); if (nameEl) nameEl.textContent = f.name || '未命名布料';
+  const noteEl = $('#fabNote'); if (noteEl) noteEl.textContent = f.note || '';
+  renderFabricMakePhotos(f);
+  openSheet('FabricDetail');
+}
+
+function renderFabricMakePhotos(f) {
+  const grid = $('#fabMakeGrid');
+  if (!grid) return;
+  const count = $('#fabMakeCount');
+  if (count) count.textContent = (f.makePhotos && f.makePhotos.length) ? `(${f.makePhotos.length})` : '';
+  if (!f.makePhotos || !f.makePhotos.length) {
+    grid.innerHTML = `<div class="fab-make-empty">还没有制作灵感照片，看到别人的成稿后传上来吧 ✨</div>`;
+    return;
+  }
+  grid.innerHTML = f.makePhotos.map((src, i) => `
+    <div class="fab-make-thumb" data-fab-make="${i}">
+      <img src="${src}" alt="制作灵感${i + 1}" />
+      <button type="button" class="fab-make-del" data-fab-make-del="${i}" aria-label="删除">✕</button>
+    </div>`).join('');
+}
+
+function addFabricMakePhotos(files) {
+  const f = state.fabricInspirations.find(x => x.id === currentFabricId);
+  if (!f) return;
+  const imgs = Array.from(files || []).filter(fi => fi && fi.type && fi.type.startsWith('image/'));
+  if (!imgs.length) return;
+  let done = 0;
+  imgs.forEach(file => {
+    const r = new FileReader();
+    r.onload = ev => {
+      f.makePhotos = f.makePhotos || [];
+      f.makePhotos.push(ev.target.result);
+      if (++done === imgs.length) {
+        saveState();
+        renderFabricMakePhotos(f);
+        refreshFabric();
+        toast(`已添加 ${f.makePhotos.length} 张制作灵感照片 ✨`);
+      }
+    };
+    r.readAsDataURL(file);
+  });
+}
+
+function deleteFabricMakePhoto(idx) {
+  const f = state.fabricInspirations.find(x => x.id === currentFabricId);
+  if (!f) return;
+  if (!confirm('删除这张制作灵感照片？')) return;
+  f.makePhotos.splice(idx, 1);
+  saveState();
+  renderFabricMakePhotos(f);
+  refreshFabric();
+}
+
+function deleteFabric(id) {
+  if (!confirm('确定删除这块布料灵感？相关的制作灵感照片也会一起删除。')) return;
+  state.fabricInspirations = state.fabricInspirations.filter(x => x.id !== id);
+  saveState();
+  closeSheet();
+  refreshFabric();
+}
+
+// 点击来源链接：直接打开浏览器（iOS PWA 会唤起 Safari），失败则退回复制弹窗
+function openBrowserLink(url, title) {
+  if (!url) { toast('暂无可用链接'); return; }
+  try {
+    const w = window.open(url, '_blank');
+    if (!w) throw new Error('blocked');
+  } catch (e) {
+    openExtLink('灵感来源', title || '外部链接', url, '📋 复制链接后，打开浏览器或对应 APP 去查看');
+  }
 }
 
 /* ---------- 采购 ---------- */
@@ -1461,7 +1632,6 @@ function refreshPortfolio() {
 /* ---------- 更多 ---------- */
 function refreshMore() {
   refreshTimeAndGreeting();
-  $('#reminderTime').textContent = state.settings.reminderTime || '09:00';
   refreshStats();
 }
 
@@ -2258,15 +2428,6 @@ function saveComplete(sheet) {
   if (NAV_HISTORY[NAV_HISTORY.length-1] === 'wishlist') refreshWishlist();
 }
 
-function saveTime(sheet) {
-  const t = $('#reminderTimeInput').value || '09:00';
-  state.settings.reminderTime = t;
-  saveState();
-  toast(`每日提醒设在 ${t} ⏰`);
-  closeSheet();
-  refreshMore();
-}
-
 /* ---------- 多选 picker ---------- */
 let pickerState = null;
 function openPicker(target) {
@@ -2569,12 +2730,28 @@ function bind() {
     });
   }
 
+  // 灵感库子标签（制作灵感 / 布料灵感）
+  $$('.seg-tabs-insp .seg-tab').forEach(t => t.addEventListener('click', () => {
+    inspSubTab = t.dataset.iseg;
+    syncInspTabs();
+    refreshInspiration();
+  }));
+
+  // 布料灵感：制作灵感照片多图上传
+  const fabMakeInput = $('#fabMakeInput');
+  if (fabMakeInput) fabMakeInput.addEventListener('change', e => {
+    if (!e.target.files || !e.target.files.length) return;
+    addFabricMakePhotos(e.target.files);
+    e.target.value = '';
+  });
+
   // FAB
   $$('.fab').forEach(f => f.addEventListener('click', () => {
     const a = f.dataset.action;
     if (a === 'new-material') openSheet('Material');
     if (a === 'new-order') openSheet('Order');
     if (a === 'new-inspiration') openSheet('Inspiration');
+    if (a === 'new-fabric') openFabricSheet();
     if (a === 'new-purchase') openSheet('Purchase');
     if (a === 'new-weight') openSheet('Weight');
     if (a === 'new-thought') openSheet('Thought');
@@ -2664,7 +2841,7 @@ function bind() {
     if (t === 'order')       saveOrder(sheet);
     if (t === 'inspiration') saveInspiration(sheet);
     if (t === 'complete')    saveComplete(sheet);
-    if (t === 'time')        saveTime(sheet);
+    if (t === 'fabric')      saveFabricSheet(sheet);
     if (t === 'weight')      saveWeight(sheet);
     if (t === 'thought')     saveThought(sheet);
     if (t === 'travel')      saveTravel(sheet);
@@ -2789,14 +2966,12 @@ function bind() {
     const fav = e.target.closest('[data-insp-fav]');
     if (fav) { e.stopPropagation(); toggleWishlist(fav.dataset.inspFav); return; }
 
-    // 灵感来源链接：弹出可复制的外链
+    // 灵感来源链接：直接打开浏览器（失败退回复制弹窗）
     const srcInsp = e.target.closest('[data-insp-source]');
     if (srcInsp) {
       e.stopPropagation();
       const it = findInspiration(srcInsp.dataset.inspSource);
-      if (it && it.source) {
-        openExtLink('灵感来源', it.title, it.source, '📋 复制链接后，打开浏览器或对应 APP 去学习');
-      }
+      if (it && it.source) openBrowserLink(it.source, it.title);
       return;
     }
 
@@ -2806,6 +2981,32 @@ function bind() {
       e.stopPropagation();
       const it = findInspiration(bpInsp.dataset.inspBp);
       if (it && it.blueprints && it.blueprints.length) openBlueprintViewer(it.blueprints, 0);
+      return;
+    }
+
+    // ===== 布料灵感：列表 → 详情 =====
+    const fabCard = e.target.closest('[data-fab-id]');
+    if (fabCard) { e.stopPropagation(); openFabricDetail(fabCard.dataset.fabId); return; }
+
+    // 布料详情：编辑 / 删除
+    const fabEdit = e.target.closest('[data-fab-edit]');
+    if (fabEdit) { e.stopPropagation(); closeSheet(); openFabricSheet(currentFabricId); return; }
+    const fabDel = e.target.closest('[data-fab-del]');
+    if (fabDel) { e.stopPropagation(); deleteFabric(currentFabricId); return; }
+
+    // 布料详情：添加制作灵感照片
+    const fabAddMake = e.target.closest('[data-fab-add-make]');
+    if (fabAddMake) { e.stopPropagation(); const inp = $('#fabMakeInput'); if (inp) inp.click(); return; }
+
+    // 布料详情：删除某张制作灵感照片（需在“查看”之前判断，避免被父级缩略图拦截）
+    const fabMakeDel = e.target.closest('[data-fab-make-del]');
+    if (fabMakeDel) { e.stopPropagation(); deleteFabricMakePhoto(Number(fabMakeDel.dataset.fabMakeDel)); return; }
+    // 布料详情：查看某张制作灵感照片（灯箱）
+    const fabMake = e.target.closest('[data-fab-make]');
+    if (fabMake) {
+      e.stopPropagation();
+      const f = state.fabricInspirations.find(x => x.id === currentFabricId);
+      if (f && f.makePhotos && f.makePhotos.length) openBlueprintViewer(f.makePhotos, Number(fabMake.dataset.fabMake));
       return;
     }
 
@@ -2873,10 +3074,6 @@ function bind() {
       }
       if (a === 'clear')   clearAll();
       if (a === 'seed')    seedAll();
-      if (a === 'set-time') {
-        openSheet('Time');
-        setTimeout(() => $('#reminderTimeInput').value = state.settings.reminderTime || '09:00', 30);
-      }
       return;
     }
 

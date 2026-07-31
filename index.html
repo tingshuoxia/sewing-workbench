@@ -224,22 +224,33 @@
             <svg viewBox="0 0 24 24" width="22" height="22"><path d="M15 6l-6 6 6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
           </button>
           <div class="page-title">
-            <div class="page-title-zh">记录灵感</div>
+            <div class="page-title-zh">灵感库</div>
             <div class="page-title-sub" id="inspCountLine">共 0 条灵感</div>
           </div>
-          <button class="ghost-btn" data-action="new-inspiration">+ 记一条</button>
+          <button class="ghost-btn" id="inspNewBtn" data-action="new-inspiration">+ 记一条</button>
         </header>
 
-        <!-- 搜索栏 -->
-        <div class="insp-search-bar">
-          <svg class="insp-search-icon" viewBox="0 0 24 24" width="16" height="16"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2"/><line x1="16" y1="16" x2="21" y2="21" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-          <input class="insp-search-input" id="inspSearchInput" placeholder="搜索标题、标签、简介…" />
-          <button class="insp-search-clear" id="inspSearchClear" aria-label="清除">✕</button>
+        <div class="seg-tabs seg-tabs-insp">
+          <button class="seg-tab seg-active" data-iseg="make">制作灵感</button>
+          <button class="seg-tab" data-iseg="fabric">布料灵感</button>
         </div>
 
-        <div class="insp-feed insp-grid" id="inspFeed"></div>
+        <!-- 制作灵感（现有内容） -->
+        <div class="seg-pane seg-pane-active" data-ipane="make">
+          <div class="insp-search-bar">
+            <svg class="insp-search-icon" viewBox="0 0 24 24" width="16" height="16"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2"/><line x1="16" y1="16" x2="21" y2="21" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+            <input class="insp-search-input" id="inspSearchInput" placeholder="搜索标题、标签、简介…" />
+            <button class="insp-search-clear" id="inspSearchClear" aria-label="清除">✕</button>
+          </div>
+          <div class="insp-feed insp-grid" id="inspFeed"></div>
+        </div>
 
-        <button class="fab fab-red" data-action="new-inspiration" aria-label="记录灵感">
+        <!-- 布料灵感（新增） -->
+        <div class="seg-pane" data-ipane="fabric">
+          <div class="fabric-feed" id="fabricFeed"></div>
+        </div>
+
+        <button class="fab fab-red" id="inspFab" data-action="new-inspiration" aria-label="新增灵感">
           <svg viewBox="0 0 24 24" width="22" height="22"><path d="M12 5v14M5 12h14" stroke="#FBF6EE" stroke-width="2.4" stroke-linecap="round"/></svg>
         </button>
 
@@ -300,14 +311,6 @@
             <button class="qa-btn qa-cream full" data-action="seed">✨ 载入示例数据</button>
             <button class="qa-btn qa-red full" data-action="clear">清空全部</button>
           </div>
-        </div>
-
-        <div class="reminder-card">
-          <div class="reminder-label">每日提醒时间</div>
-          <div class="reminder-time">
-            <button class="time-pill" data-action="set-time"><span id="reminderTime">09:00</span></button>
-          </div>
-          <p class="reminder-desc">打开 App 到点后会提醒你「去看看灵感 / 挑一件想做的」。想要每天自动推送全网爆款教程，可用配套的定时任务。</p>
         </div>
 
         <div class="version-line">🐾 聼说的缝纫工作台 · v1.1</div>
@@ -764,6 +767,62 @@
   </div>
 </div>
 
+<!-- 布料灵感：新增 / 编辑 -->
+<div class="sheet" id="sheetFabric" aria-hidden="true">
+  <div class="sheet-backdrop" data-close></div>
+  <div class="sheet-panel">
+    <div class="sheet-handle"></div>
+    <h3 class="sheet-title">添加布料灵感 🧵</h3>
+    <div class="form">
+      <label class="field">
+        <span class="field-label">布料名称 *</span>
+        <input class="text-input" data-name="name" placeholder="如：奶油色亚麻 · 碎花棉布" />
+      </label>
+
+      <label class="field">
+        <span class="field-label">布料照片（1:1 大图）</span>
+        <div class="photo-upload photo-upload-1to1" data-photo>
+          <span>点此拍照 / 选图</span>
+          <input type="file" accept="image/*" hidden data-photo-input />
+        </div>
+      </label>
+
+      <label class="field">
+        <span class="field-label">备注（材质 / 手感 / 用途）</span>
+        <textarea class="text-input" data-name="note" rows="3" placeholder="这块布适合做什么、需要注意什么…"></textarea>
+      </label>
+
+      <button class="qa-btn qa-red full" data-save="fabric">保存布料</button>
+    </div>
+  </div>
+</div>
+
+<!-- 布料灵感：详情（大图 + 多张制作灵感照片） -->
+<div class="sheet sheet-tall" id="sheetFabricDetail" aria-hidden="true">
+  <div class="sheet-backdrop" data-close></div>
+  <div class="sheet-panel">
+    <div class="sheet-handle"></div>
+    <div class="fab-detail-head">
+      <h3 class="sheet-title">布料灵感 🧵</h3>
+      <div class="fab-detail-actions">
+        <button class="icon-btn" data-fab-edit aria-label="编辑">✎</button>
+        <button class="icon-btn icon-btn-danger" data-fab-del aria-label="删除">🗑</button>
+      </div>
+    </div>
+
+    <div class="fab-photo-1to1">
+      <img id="fabMainImg" alt="布料大图" />
+    </div>
+    <div class="fab-name" id="fabName"></div>
+    <div class="fab-note" id="fabNote"></div>
+
+    <div class="fab-section-title">制作灵感照片 <span id="fabMakeCount"></span></div>
+    <div class="fab-make-grid" id="fabMakeGrid"></div>
+    <button class="qa-btn qa-cream full" data-fab-add-make>＋ 添加制作灵感照片</button>
+    <input type="file" accept="image/*" multiple hidden id="fabMakeInput" />
+  </div>
+</div>
+
 <!-- 完成作品（上传成品照） -->
 <div class="sheet" id="sheetComplete" aria-hidden="true">
   <div class="sheet-backdrop" data-close></div>
@@ -797,22 +856,6 @@
         <textarea class="text-input" data-name="note" placeholder="踩过的坑、下次想改的地方…"></textarea>
       </label>
       <button class="qa-btn qa-red full" data-save="complete">归入作品集</button>
-    </div>
-  </div>
-</div>
-
-<!-- 编辑每日提醒 -->
-<div class="sheet" id="sheetTime" aria-hidden="true">
-  <div class="sheet-backdrop" data-close></div>
-  <div class="sheet-panel">
-    <div class="sheet-handle"></div>
-    <h3 class="sheet-title">每日提醒时间 ⏰</h3>
-    <div class="form">
-      <label class="field">
-        <span class="field-label">时间</span>
-        <input class="text-input" type="time" id="reminderTimeInput" />
-      </label>
-      <button class="qa-btn qa-red full" data-save="time">保存</button>
     </div>
   </div>
 </div>
